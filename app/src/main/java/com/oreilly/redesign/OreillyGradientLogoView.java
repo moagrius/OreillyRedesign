@@ -8,12 +8,18 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.widget.FrameLayout;
 
-public class OreillyToolbarWrapper extends FrameLayout {
+/**
+ * This can be used to wrap a Toolbar, or as a sibling
+ */
+public class OreillyGradientLogoView extends FrameLayout {
 
   // the logo is drawn off screen a little, this is a best approximation looking at how the graphic was constructed
   private static final int OFFSET_LEFT_PIXELS = -2;
   private static final int OFFSET_TOP_PIXELS = -17;
   private static final int CROP_TOP_PIXELS = -21;
+
+  // most toolbars draw the logo across the left-most 90% of available space
+  private static final float LOGO_FILL_PERCENT = 0.9f;
 
   // we can populate these until construction because we need the density
   private float mOffsetX;
@@ -22,15 +28,15 @@ public class OreillyToolbarWrapper extends FrameLayout {
   private OreillyLogoPath mLogo = new OreillyLogoPath();
   private OreillyGradientDynamicPaint mGradient = new OreillyGradientDynamicPaint();
 
-  public OreillyToolbarWrapper(Context context) {
+  public OreillyGradientLogoView(Context context) {
     this(context, null);
   }
 
-  public OreillyToolbarWrapper(Context context, AttributeSet attrs) {
+  public OreillyGradientLogoView(Context context, AttributeSet attrs) {
     this(context, attrs, 0);
   }
 
-  public OreillyToolbarWrapper(Context context, AttributeSet attrs, int defStyleAttr) {
+  public OreillyGradientLogoView(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
     setBackgroundColor(Color.TRANSPARENT);
     DisplayMetrics metrics = context.getResources().getDisplayMetrics();
@@ -43,7 +49,7 @@ public class OreillyToolbarWrapper extends FrameLayout {
   }
 
   public void reconstructPaths() {
-    mLogo.setWidth(getWidth());
+    mLogo.setWidth((int) (getWidth() * LOGO_FILL_PERCENT));
     // must call offset _after_ each call to setWidth, because we reset internally
     mLogo.offset(mOffsetX, mOffsetY);
   }
