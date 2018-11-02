@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-          android:layout_width="match_parent"
-          android:layout_height="192dp"
-          android:paddingBottom="10dp"
-             android:paddingStart="20dp"
-          android:background="@drawable/toolbar_gradient">
+<com.oreilly.redesign.OreillyGradientDynamicView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                 android:layout_width="match_parent"
+                                                 android:layout_height="192dp"
+                                                 android:padding="10dp">
 
   <TextView
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_gravity="bottom"
-      android:textSize="18sp"
+      android:text="Hello, User Person!"
       android:textColor="@android:color/white"
-      android:text="Hello, User Person!" />
+      android:textSize="22sp" />
 
-</FrameLayout>
+</com.oreilly.redesign.OreillyGradientDynamicView>

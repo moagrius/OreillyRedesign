@@ -6,9 +6,7 @@ import android.graphics.Color;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
 
-public class OreillyGradientView extends FrameLayout {
-
-  private OreillyGradientDynamicPaint mGradient = new OreillyGradientDynamicPaint();
+public abstract class OreillyGradientView extends FrameLayout {
 
   public OreillyGradientView(Context context) {
     this(context, null);
@@ -23,20 +21,18 @@ public class OreillyGradientView extends FrameLayout {
     setBackgroundColor(Color.TRANSPARENT);
   }
 
-  public void reconstructShaders() {
-    mGradient.update(getWidth(), getHeight());
-  }
+  public abstract OreillyGradientPaint getOreillyGradientPaint();
 
   @Override
   protected void onLayout(boolean changed, int l, int t, int r, int b) {
     super.onLayout(changed, l, t, r, b);
-    reconstructShaders();
+    getOreillyGradientPaint().update(getWidth(), getHeight());
     invalidate();
   }
 
   @Override
   protected void onDraw(Canvas canvas) {
-    mGradient.draw(canvas);
+    getOreillyGradientPaint().draw(canvas);
     super.onDraw(canvas);
   }
 
