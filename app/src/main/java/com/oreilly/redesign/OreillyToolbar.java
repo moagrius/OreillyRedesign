@@ -2,14 +2,14 @@ package com.oreilly.redesign;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
 
 /**
@@ -29,7 +29,7 @@ import android.util.TypedValue;
  * the stroke is 65
  * the dot's x is 401
  *
- * let's try to divide these by 8...
+ * let's try to divide these by 8...  some small cheating required
  *
  * document is 67
  * pixels are 62x51
@@ -49,35 +49,57 @@ import android.util.TypedValue;
  * the dot's left is 261, so 72.5%
  * the dot's right is 324, so 90%
  * the dot's size is then 17.5%
+ *
+ * the toolbar in inspect mode is 21 pixels taller than the one in preview mode
+ * with the top cropped, so everything is 21px farther up
  */
 public class OreillyToolbar extends Toolbar {
 
-  private static final int LOGO_COLOR = 0x8FFFFFFF;
+  /**
+   * These are all constants and not configurable
+   * because no one should be configuring the drawing
+   * values of the brand.
+   */
+
+  private static final int LOGO_COLOR = 0x2FFFFFFF;  // 12% is 0x1EFFFFFF, but that's barely visible
+
+  // the gradient is efcc01 at 0%, becoming ee0000 at 50% and continuing that color to 100%
   private static final int[] COLORS = { 0xFFEFCC01, 0xFFEE0000, 0xFFEE0000 };
   private static final float[] POSITIONS = { 0f, 0.5f, 1f };
 
-  // the logo is drawn off screen a little
-  private static final int OFFSET_X_PIXELS = -2;
-  private static final int OFFSET_Y_PIXELS = -17;
+  // the logo is drawn off screen a little, this is a best approximation looking at how the graphic was constructed
+  private static final int OFFSET_LEFT_PIXELS = -2;
+  private static final int OFFSET_TOP_PIXELS = -17;
+  private static final int CROP_TOP_PIXELS = -21;
 
+  // all sizes are relative to the available drawing width
   private static final float O_SIZE_MULTIPLIER = 0.75f;
-  private static final float O_STROKE_MULTIPLER = 0.16f;
+  private static final float O_STROKE_MULTIPLIER = 0.16f;
   private static final float DOT_SIZE_MULTIPLIER = 0.175f;
-  private static final float DOT_LEFT_MULTIPLER = 0.74f;
+  private static final float DOT_LEFT_MULTIPLIER = 0.74f;
+
+  // allocate memory for all of out drawing objects now for smooth drawing
+  private Path mOuterOPath = new Path();
+  private Path mInnerOPath = new Path();
+
+  private RectF mOuterOval = new RectF();
+  private RectF mInnerOval = new RectF();
 
   private Paint mGradientPaint = new Paint();
-  private Paint mLogoStrokePaint = new Paint();
-  private Paint mLogoFillPaint = new Paint();
+  private Paint mFillPaint = new Paint();
   {
     mGradientPaint.setStyle(Paint.Style.FILL);
-    mLogoStrokePaint.setStyle(Paint.Style.STROKE);
-    mLogoFillPaint.setStyle(Paint.Style.FILL);
-    mLogoStrokePaint.setColor(LOGO_COLOR);
-    mLogoFillPaint.setColor(LOGO_COLOR);
+    mFillPaint.setStyle(Paint.Style.FILL);
+    mFillPaint.setColor(LOGO_COLOR);
   }
 
+  // we can populate these until construction because we need the density
   private float mOffsetX;
   private float mOffsetY;
+
+  // layout happens less frequently than drawing, so let's compute and store those values duringn the former
+  private float mDotRadius;
+  private float mDotLeft;
 
   public OreillyToolbar(Context context) {
     this(context, null);
@@ -89,41 +111,60 @@ public class OreillyToolbar extends Toolbar {
 
   public OreillyToolbar(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
-    setBackgroundColor(Color.TRANSPARENT);
     DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-    mOffsetX = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, OFFSET_X_PIXELS, metrics);
-    mOffsetY = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, OFFSET_Y_PIXELS, metrics);
+    mOffsetX = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, OFFSET_LEFT_PIXELS, metrics);
+    mOffsetY = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, OFFSET_TOP_PIXELS + CROP_TOP_PIXELS, metrics);
   }
 
   public void reconstructShaders() {
     LinearGradient gradient = new LinearGradient(0, 0, getWidth(), getHeight(), COLORS, POSITIONS, Shader.TileMode.CLAMP);
     mGradientPaint.setShader(gradient);
-    invalidate();
+  }
+
+  public void reconstructPaths() {
+    // draw an oval and punch a whole, so stroke and box models don't make a mess out of our math
+    float outerSize = getWidth() * O_SIZE_MULTIPLIER;
+    float strokeSize = outerSize * O_STROKE_MULTIPLIER;
+    float innerSize = outerSize - (strokeSize * 2);
+
+    // this is the oval-containing-path that will be drawn
+    mOuterOval.set(mOffsetX, mOffsetY, outerSize, outerSize);
+    mOuterOPath.reset();
+    mOuterOPath.addOval(mOuterOval, Path.Direction.CW);
+
+    // this is the oval that will be removed
+    float innerX = mOffsetX + strokeSize;
+    float innerY = mOffsetY + strokeSize;
+    mInnerOval.set(innerX, innerY, innerX + innerSize, innerY + innerSize);
+    mInnerOPath.reset();
+    mInnerOPath.addOval(mInnerOval, Path.Direction.CW);
+
+    // remove the inner path from the outer path
+    mOuterOPath.op(mInnerOPath, Path.Op.DIFFERENCE);
+  }
+
+  private void recomputeComponentSizes() {
+    mDotRadius = getWidth() * DOT_SIZE_MULTIPLIER * 0.5f;
+    mDotLeft = getWidth() * DOT_LEFT_MULTIPLIER;
   }
 
   @Override
   protected void onLayout(boolean changed, int l, int t, int r, int b) {
     super.onLayout(changed, l, t, r, b);
     reconstructShaders();
+    reconstructPaths();
+    recomputeComponentSizes();
+    invalidate();
   }
 
   @Override
   protected void onDraw(Canvas canvas) {
-    Log.d("RD", "width=" + getWidth());
     // draw gradient across full width
     canvas.drawRect(0, 0, getWidth(), getHeight(), mGradientPaint);
-    // draw logo parts
-    float oSize = getWidth() * O_SIZE_MULTIPLIER;
-    Log.d("RD", "o size=" + oSize);
-    float oStroke = oSize * O_STROKE_MULTIPLER;
-    mLogoStrokePaint.setStrokeWidth(oStroke);
-    float oRadius = (oSize - (oStroke * 2)) * 0.5f;
-    Log.d("RD", "o radius=" + oRadius);
-    float dotSize = getWidth() * DOT_SIZE_MULTIPLIER;
-    float dotLeft = getWidth() * DOT_LEFT_MULTIPLER;
-    float dotRadius = dotSize * 0.5f;
-    canvas.drawCircle(oRadius + mOffsetX, oRadius + mOffsetY, oRadius, mLogoStrokePaint);
-    canvas.drawCircle(dotLeft + dotRadius + mOffsetX, dotRadius + mOffsetY, dotRadius, mLogoFillPaint);
+    // draw circle
+    canvas.drawPath(mOuterOPath, mFillPaint);
+    // draw dot
+    canvas.drawCircle(mDotLeft + mDotRadius + mOffsetX, mDotRadius + mOffsetY, mDotRadius, mFillPaint);
     // draw everything else
     super.onDraw(canvas);
   }
