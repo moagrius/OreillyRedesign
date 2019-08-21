@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.oreilly.redesign.OreillyGradientDynamicView xmlns:android="http://schemas.android.com/apk/res/android"
-                                                 android:layout_width="match_parent"
-                                                 android:layout_height="192dp"
-                                                 android:padding="10dp">
+<com.oreilly.redesign.design.OreillyGradientDynamicView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                        android:layout_width="match_parent"
+                                                        android:layout_height="192dp"
+                                                        android:padding="10dp">
 
   <TextView
       android:layout_width="wrap_content"
@@ -12,4 +12,4 @@
       android:textColor="@android:color/white"
       android:textSize="22sp" />
 
-</com.oreilly.redesign.OreillyGradientDynamicView>
+</com.oreilly.redesign.design.OreillyGradientDynamicView>

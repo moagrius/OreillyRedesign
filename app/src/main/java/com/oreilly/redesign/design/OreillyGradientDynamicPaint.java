@@ -1,4 +1,4 @@
-package com.oreilly.redesign;
+package com.oreilly.redesign.design;
 
 import android.graphics.Shader;
 

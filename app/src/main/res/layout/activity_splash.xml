@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.oreilly.redesign.OreillyGradientLogoPassiveView xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<com.oreilly.redesign.design.OreillyGradientLogoPassiveView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                            android:layout_width="match_parent"
+                                                            android:layout_height="match_parent">
 
   <ImageView
       android:layout_width="180dp"
@@ -9,4 +9,4 @@
       android:layout_gravity="center"
       android:src="@drawable/oreilly_logo" />
 
-</com.oreilly.redesign.OreillyGradientLogoPassiveView>
+</com.oreilly.redesign.design.OreillyGradientLogoPassiveView>
